@@ -37,7 +37,7 @@ def load_default_kaggle_data():
     Load the default Kaggle dataset from card_transdata.csv
     The file should be in the same folder as this app.
     """
-    df = pd.read_csv("c:/BANK APPLICATION/card_transdata.csv")
+    df = pd.read_csv("card_transdata.csv")
     return df
 
 
@@ -347,3 +347,4 @@ if st.button("Score all transactions"):
         file_name="scored_card_transactions.csv",
         mime="text/csv",
     )
+
