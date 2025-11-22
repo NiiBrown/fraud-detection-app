@@ -13,15 +13,7 @@ from sklearn.metrics import (
 )
 
 st.set_page_config(page_title="Secure Bank Fraud Detection", layout="wide")
-st.markdown(
-    """
-    **About this app**
 
-    This app demonstrates an AI-based fraud detection system using a Random Forest classifier
-    trained on a Kaggle-style credit card transaction dataset. You can adjust the fraud threshold,
-    explore model performance, and score new data.
-    """
-)
 
 # =====================================================
 # 1. CONSTANTS AND HELPERS
@@ -170,14 +162,12 @@ st.title("Secure Bank: Card Transaction Fraud Detection")
 
 st.markdown(
     """
-This application demonstrates an AI system that detects **credit card transaction fraud**  
-using a real Kaggle dataset.  
+    **About this app**
 
-You can:
-- Use the default Kaggle sample
-- Upload your own file in the same format
-- Adjust the fraud threshold to see how it affects detection
-"""
+    This app demonstrates an AI-based fraud detection system using a Random Forest classifier
+    trained on a Kaggle-style credit card transaction dataset. You can adjust the fraud threshold,
+    explore model performance, and score new data.
+    """
 )
 
 # =====================================================
@@ -356,4 +346,5 @@ if st.button("Score all transactions"):
         file_name="scored_card_transactions.csv",
         mime="text/csv",
     )
+
 
