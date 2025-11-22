@@ -1,6 +1,10 @@
+pip==23.3
+setuptools
+wheel
 streamlit==1.32.2
 pandas
 numpy
 scikit-learn
-matplotlib
+matplotlib==3.7.1
+kiwisolver
 
