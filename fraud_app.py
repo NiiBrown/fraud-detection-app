@@ -12,8 +12,82 @@ from sklearn.metrics import (
     auc,
 )
 
-st.set_page_config(page_title="Secure Bank Fraud Detection", layout="wide")
+st.set_page_config(
+    page_title="Secure Bank Fraud Detection",
+    layout="wide",
+    page_icon="🔐",
+)
 
+# =====================================================
+# CUSTOM STYLING
+# =====================================================
+
+st.markdown(
+    """
+    <style>
+    .main {
+        padding: 1.5rem 2.5rem;
+    }
+    /* Top hero card */
+    .hero-card {
+        padding: 1.5rem 2rem;
+        border-radius: 12px;
+        background: linear-gradient(135deg, #0f172a, #1e293b);
+        border: 1px solid #1f2933;
+        margin-bottom: 1.5rem;
+    }
+    .hero-title {
+        font-size: 1.8rem;
+        font-weight: 700;
+        color: #e5e7eb;
+        margin-bottom: 0.3rem;
+    }
+    .hero-subtitle {
+        font-size: 0.95rem;
+        color: #cbd5f5;
+        max-width: 900px;
+    }
+    .hero-badge {
+        display: inline-block;
+        padding: 0.2rem 0.7rem;
+        border-radius: 999px;
+        background-color: #0ea5e9;
+        color: #0b1120;
+        font-size: 0.75rem;
+        font-weight: 600;
+        margin-bottom: 0.6rem;
+    }
+
+    /* Buttons */
+    .stButton>button {
+        background-color: #0ea5e9;
+        color: white;
+        border-radius: 10px;
+        height: 2.8em;
+        padding: 0.4rem 1.2rem;
+        border: none;
+        font-size: 0.95rem;
+        font-weight: 600;
+    }
+    .stButton>button:hover {
+        background-color: #0284c7;
+    }
+
+    /* Inputs */
+    .stTextInput>div>div>input,
+    .stNumberInput>div>div>input {
+        border-radius: 8px;
+    }
+
+    /* Tabs text tweak */
+    .stTabs [data-baseweb="tab"] {
+        font-size: 0.95rem;
+        font-weight: 600;
+    }
+    </style>
+    """,
+    unsafe_allow_html=True,
+)
 
 # =====================================================
 # 1. CONSTANTS AND HELPERS
@@ -88,7 +162,14 @@ def train_fraud_model(df: pd.DataFrame):
 # 2. SIDEBAR CONFIGURATION
 # =====================================================
 
-st.sidebar.header("Configuration")
+st.sidebar.title("⚙️ Configuration")
+
+st.sidebar.markdown(
+    """
+    Select your data source, adjust the fraud threshold,  
+    and optionally upload your own dataset.
+    """
+)
 
 data_mode = st.sidebar.radio(
     "Choose data source",
@@ -120,17 +201,25 @@ risk_threshold = st.sidebar.slider(
     help="If predicted fraud probability is above this value, the transaction is flagged as fraud.",
 )
 
+st.sidebar.markdown(
+    f"""
+    **Current threshold:** `{risk_threshold:.2f}`  
+    Lower it to catch more fraud (with more false alarms),  
+    raise it to reduce false positives.
+    """
+)
+
 # =====================================================
 # 3. LOAD DATA AND TRAIN MODEL
 # =====================================================
 
 if user_df is not None:
     data = user_df.copy()
-    st.success(f"Using uploaded dataset with {len(data)} rows.")
+    st.success(f"Using uploaded dataset with **{len(data)}** rows.")
 else:
     try:
         data = load_default_kaggle_data()
-        st.info(f"Using default Kaggle dataset with {len(data)} rows.")
+        st.info(f"Using default Kaggle dataset with **{len(data)}** rows.")
     except FileNotFoundError:
         st.error(
             "Default Kaggle dataset 'card_transdata.csv' not found. "
@@ -155,196 +244,238 @@ fpr, tpr, _ = roc_curve(y_test, y_proba_test)
 roc_auc = auc(fpr, tpr)
 
 # =====================================================
-# 4. PAGE HEADER
+# 4. TOP HERO SECTION
 # =====================================================
-
-st.title("Secure Bank: Card Transaction Fraud Detection")
 
 st.markdown(
     """
-    **About this app**
-
-    This app demonstrates an AI-based fraud detection system using a Random Forest classifier
-    trained on a Kaggle-style credit card transaction dataset. You can adjust the fraud threshold,
-    explore model performance, and score new data.
-    """
+    <div class="hero-card">
+        <div class="hero-badge">Secure Bank · AI Fraud Lab</div>
+        <div class="hero-title">🔐 Card Transaction Fraud Detection Dashboard</div>
+        <div class="hero-subtitle">
+            This application uses a Random Forest classifier trained on a Kaggle-style credit card 
+            transaction dataset to estimate the probability that a given transaction is fraudulent. 
+            You can explore model performance, visualize fraud patterns, and score new transactions 
+            or entire datasets in real time.
+        </div>
+    </div>
+    """,
+    unsafe_allow_html=True,
 )
 
 # =====================================================
-# 5. METRICS AND VISUALS (MODEL LEVEL)
+# 5. MAIN TABS
 # =====================================================
 
-st.subheader("Model performance on test data")
-
-col_m1, col_m2, col_m3, col_m4 = st.columns(4)
-
-with col_m1:
-    st.metric("Accuracy", f"{overall_accuracy:.3f}")
-
-with col_m2:
-    st.metric("Fraud recall (class 1)", f"{fraud_recall:.3f}")
-
-with col_m3:
-    st.metric("Fraud precision (class 1)", f"{fraud_precision:.3f}")
-
-with col_m4:
-    st.metric("ROC AUC", f"{roc_auc:.3f}")
-
-col_v1, col_v2 = st.columns(2)
-
-with col_v1:
-    st.markdown("**Confusion matrix (test set)**")
-    fig_cm, ax_cm = plt.subplots()
-    im = ax_cm.imshow(cm, cmap="Blues")
-    ax_cm.set_xticks([0, 1])
-    ax_cm.set_yticks([0, 1])
-    ax_cm.set_xticklabels(["Legit (0)", "Fraud (1)"])
-    ax_cm.set_yticklabels(["Legit (0)", "Fraud (1)"])
-    ax_cm.set_xlabel("Predicted label")
-    ax_cm.set_ylabel("True label")
-    for i in range(cm.shape[0]):
-        for j in range(cm.shape[1]):
-            ax_cm.text(j, i, cm[i, j], ha="center", va="center", color="black")
-    fig_cm.tight_layout()
-    st.pyplot(fig_cm)
-
-with col_v2:
-    st.markdown("**ROC curve (test set)**")
-    fig_roc, ax_roc = plt.subplots()
-    ax_roc.plot(fpr, tpr, label=f"AUC = {roc_auc:.3f}")
-    ax_roc.plot([0, 1], [0, 1], linestyle="--")
-    ax_roc.set_xlabel("False positive rate")
-    ax_roc.set_ylabel("True positive rate")
-    ax_roc.set_title("ROC curve")
-    ax_roc.legend(loc="lower right")
-    st.pyplot(fig_roc)
-
-st.subheader("Class distribution and feature importance")
-
-col_d1, col_d2 = st.columns(2)
-
-with col_d1:
-    class_counts = data[LABEL_COL].value_counts().sort_index()
-    fig_dist, ax_dist = plt.subplots()
-    ax_dist.bar(["Legit (0)", "Fraud (1)"], class_counts.values)
-    ax_dist.set_ylabel("Number of transactions")
-    ax_dist.set_title("Class distribution in dataset")
-    st.pyplot(fig_dist)
-
-with col_d2:
-    importances = model.feature_importances_
-    indices = np.argsort(importances)[::-1]
-    feature_names = [FEATURE_COLS[i] for i in indices]
-
-    fig_imp, ax_imp = plt.subplots()
-    ax_imp.bar(range(len(importances)), importances[indices])
-    ax_imp.set_xticks(range(len(importances)))
-    ax_imp.set_xticklabels(feature_names, rotation=45, ha="right")
-    ax_imp.set_ylabel("Importance")
-    ax_imp.set_title("Feature importance (Random Forest)")
-    fig_imp.tight_layout()
-    st.pyplot(fig_imp)
-
-# =====================================================
-# 6. SINGLE TRANSACTION PREDICTION
-# =====================================================
-
-st.subheader("Test a single transaction")
-
-c1, c2, c3, c4 = st.columns(4)
-
-with c1:
-    distance_from_home = st.number_input(
-        "Distance from home",
-        min_value=0.0,
-        value=10.0,
-    )
-    repeat_retailer = st.selectbox(
-        "Repeat retailer",
-        ["No", "Yes"],
-    )
-
-with c2:
-    distance_from_last = st.number_input(
-        "Distance from last transaction",
-        min_value=0.0,
-        value=1.0,
-    )
-    used_chip = st.selectbox(
-        "Used chip",
-        ["No", "Yes"],
-    )
-
-with c3:
-    ratio_to_median = st.number_input(
-        "Ratio to median purchase price",
-        min_value=0.0,
-        value=1.0,
-    )
-    used_pin_number = st.selectbox(
-        "Used PIN",
-        ["No", "Yes"],
-    )
-
-with c4:
-    online_order = st.selectbox(
-        "Online order",
-        ["No", "Yes"],
-    )
-
-if st.button("Predict fraud risk for this transaction"):
-    input_row = pd.DataFrame(
-        [
-            {
-                "distance_from_home": distance_from_home,
-                "distance_from_last_transaction": distance_from_last,
-                "ratio_to_median_purchase_price": ratio_to_median,
-                "repeat_retailer": 1 if repeat_retailer == "Yes" else 0,
-                "used_chip": 1 if used_chip == "Yes" else 0,
-                "used_pin_number": 1 if used_pin_number == "Yes" else 0,
-                "online_order": 1 if online_order == "Yes" else 0,
-            }
-        ]
-    )
-
-    prob = model.predict_proba(input_row)[:, 1][0]
-    label = "Fraud" if prob >= risk_threshold else "Legit"
-
-    st.markdown("### Prediction result")
-    st.write(f"Estimated fraud probability: **{prob:.3f}**")
-    st.write(f"Decision at threshold {risk_threshold:.2f}: **{label}**")
-
-# =====================================================
-# 7. SCORE FULL DATASET AND DOWNLOAD
-# =====================================================
-
-st.subheader("Score the entire dataset")
-
-st.markdown(
-    """
-Use this section to score every row in the current dataset  
-(default Kaggle sample or your uploaded file) and download the results.
-"""
+tab_overview, tab_perf, tab_viz, tab_single, tab_batch = st.tabs(
+    [
+        "📋 Overview",
+        "📈 Model Performance",
+        "📊 Visual Analytics",
+        "🧪 Single Transaction",
+        "📝 Batch Scoring",
+    ]
 )
 
-if st.button("Score all transactions"):
-    X_all = data[FEATURE_COLS]
-    probs_all = model.predict_proba(X_all)[:, 1]
-    preds_all = (probs_all >= risk_threshold).astype(int)
+# -------------------- OVERVIEW TAB --------------------
+with tab_overview:
+    st.markdown("### 📋 Quick summary")
 
-    result_df = data.copy()
-    result_df["fraud_probability"] = probs_all
-    result_df["fraud_prediction"] = preds_all
+    col_o1, col_o2, col_o3 = st.columns(3)
+    with col_o1:
+        st.metric("Accuracy", f"{overall_accuracy:.3f}")
+    with col_o2:
+        st.metric("Fraud recall (class 1)", f"{fraud_recall:.3f}")
+    with col_o3:
+        st.metric("ROC AUC", f"{roc_auc:.3f}")
 
-    st.write("Preview of scored data (first 50 rows):")
-    st.dataframe(result_df.head(50))
+    st.markdown(
+        """
+        **How to use this dashboard**
 
-    csv_bytes = result_df.to_csv(index=False).encode("utf-8")
-    st.download_button(
-        "Download scored dataset as CSV",
-        data=csv_bytes,
-        file_name="scored_card_transactions.csv",
-        mime="text/csv",
+        1. Choose the data source and fraud threshold from the left sidebar.  
+        2. Review performance metrics under the **Model Performance** tab.  
+        3. Explore confusion matrix, ROC curve, class balance, and feature importance under **Visual Analytics**.  
+        4. Test individual scenarios under **Single Transaction**.  
+        5. Score full datasets and download results under **Batch Scoring**.
+        """
     )
+
+# -------------------- MODEL PERFORMANCE TAB --------------------
+with tab_perf:
+    st.markdown("### 📈 Model performance on test data")
+
+    col_m1, col_m2, col_m3, col_m4 = st.columns(4)
+
+    with col_m1:
+        st.metric("Accuracy", f"{overall_accuracy:.3f}")
+
+    with col_m2:
+        st.metric("Fraud recall (class 1)", f"{fraud_recall:.3f}")
+
+    with col_m3:
+        st.metric("Fraud precision (class 1)", f"{fraud_precision:.3f}")
+
+    with col_m4:
+        st.metric("ROC AUC", f"{roc_auc:.3f}")
+
+    col_v1, col_v2 = st.columns(2)
+
+    with col_v1:
+        st.markdown("**Confusion matrix (test set)**")
+        fig_cm, ax_cm = plt.subplots()
+        im = ax_cm.imshow(cm, cmap="Blues")
+        ax_cm.set_xticks([0, 1])
+        ax_cm.set_yticks([0, 1])
+        ax_cm.set_xticklabels(["Legit (0)", "Fraud (1)"])
+        ax_cm.set_yticklabels(["Legit (0)", "Fraud (1)"])
+        ax_cm.set_xlabel("Predicted label")
+        ax_cm.set_ylabel("True label")
+        for i in range(cm.shape[0]):
+            for j in range(cm.shape[1]):
+                ax_cm.text(j, i, cm[i, j], ha="center", va="center", color="black")
+        fig_cm.tight_layout()
+        st.pyplot(fig_cm)
+
+    with col_v2:
+        st.markdown("**ROC curve (test set)**")
+        fig_roc, ax_roc = plt.subplots()
+        ax_roc.plot(fpr, tpr, label=f"AUC = {roc_auc:.3f}")
+        ax_roc.plot([0, 1], [0, 1], linestyle="--")
+        ax_roc.set_xlabel("False positive rate")
+        ax_roc.set_ylabel("True positive rate")
+        ax_roc.set_title("ROC curve")
+        ax_roc.legend(loc="lower right")
+        st.pyplot(fig_roc)
+
+# -------------------- VISUAL ANALYTICS TAB --------------------
+with tab_viz:
+    st.markdown("### 📊 Dataset and feature insights")
+
+    col_d1, col_d2 = st.columns(2)
+
+    with col_d1:
+        st.markdown("**Class distribution in dataset**")
+        class_counts = data[LABEL_COL].value_counts().sort_index()
+        fig_dist, ax_dist = plt.subplots()
+        ax_dist.bar(["Legit (0)", "Fraud (1)"], class_counts.values, color=["#22c55e", "#ef4444"])
+        ax_dist.set_ylabel("Number of transactions")
+        ax_dist.set_title("Class distribution")
+        st.pyplot(fig_dist)
+
+    with col_d2:
+        st.markdown("**Feature importance (Random Forest)**")
+        importances = model.feature_importances_
+        indices = np.argsort(importances)[::-1]
+        feature_names = [FEATURE_COLS[i] for i in indices]
+
+        fig_imp, ax_imp = plt.subplots()
+        ax_imp.bar(range(len(importances)), importances[indices])
+        ax_imp.set_xticks(range(len(importances)))
+        ax_imp.set_xticklabels(feature_names, rotation=45, ha="right")
+        ax_imp.set_ylabel("Importance")
+        ax_imp.set_title("Top predictive features")
+        fig_imp.tight_layout()
+        st.pyplot(fig_imp)
+
+# -------------------- SINGLE TRANSACTION TAB --------------------
+with tab_single:
+    st.markdown("### 🧪 Test a single transaction")
+
+    c1, c2, c3, c4 = st.columns(4)
+
+    with c1:
+        distance_from_home = st.number_input(
+            "Distance from home",
+            min_value=0.0,
+            value=10.0,
+        )
+        repeat_retailer = st.selectbox(
+            "Repeat retailer",
+            ["No", "Yes"],
+        )
+
+    with c2:
+        distance_from_last = st.number_input(
+            "Distance from last transaction",
+            min_value=0.0,
+            value=1.0,
+        )
+        used_chip = st.selectbox(
+            "Used chip",
+            ["No", "Yes"],
+        )
+
+    with c3:
+        ratio_to_median = st.number_input(
+            "Ratio to median purchase price",
+            min_value=0.0,
+            value=1.0,
+        )
+        used_pin_number = st.selectbox(
+            "Used PIN",
+            ["No", "Yes"],
+        )
+
+    with c4:
+        online_order = st.selectbox(
+            "Online order",
+            ["No", "Yes"],
+        )
+
+    if st.button("Predict fraud risk for this transaction"):
+        input_row = pd.DataFrame(
+            [
+                {
+                    "distance_from_home": distance_from_home,
+                    "distance_from_last_transaction": distance_from_last,
+                    "ratio_to_median_purchase_price": ratio_to_median,
+                    "repeat_retailer": 1 if repeat_retailer == "Yes" else 0,
+                    "used_chip": 1 if used_chip == "Yes" else 0,
+                    "used_pin_number": 1 if used_pin_number == "Yes" else 0,
+                    "online_order": 1 if online_order == "Yes" else 0,
+                }
+            ]
+        )
+
+        prob = model.predict_proba(input_row)[:, 1][0]
+        label = "Fraud" if prob >= risk_threshold else "Legit"
+
+        st.markdown("### Prediction result")
+        st.write(f"Estimated fraud probability: **{prob:.3f}**")
+        st.write(f"Decision at threshold {risk_threshold:.2f}: **{label}**")
+
+# -------------------- BATCH SCORING TAB --------------------
+with tab_batch:
+    st.markdown("### 📝 Score the entire dataset")
+
+    st.markdown(
+        """
+        Use this section to score every row in the current dataset  
+        (default Kaggle sample or your uploaded file) and download the results.
+        """
+    )
+
+    if st.button("Score all transactions"):
+        X_all = data[FEATURE_COLS]
+        probs_all = model.predict_proba(X_all)[:, 1]
+        preds_all = (probs_all >= risk_threshold).astype(int)
+
+        result_df = data.copy()
+        result_df["fraud_probability"] = probs_all
+        result_df["fraud_prediction"] = preds_all
+
+        st.write("Preview of scored data (first 50 rows):")
+        st.dataframe(result_df.head(50))
+
+        csv_bytes = result_df.to_csv(index=False).encode("utf-8")
+        st.download_button(
+            "Download scored dataset as CSV",
+            data=csv_bytes,
+            file_name="scored_card_transactions.csv",
+            mime="text/csv",
+        )
+
+
 
 
